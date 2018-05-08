@@ -6,7 +6,7 @@ Pseodocode:<br />
 2.Graph construction (Hypergraph/ Dual Hypergraph/ None for small instances)<br />
 3.Graph Partition (hMetis/ CFPM+FM/others)->see Literature (Hypergraph)<br />
 4.Initial solution (Hard way(give cut a permenant satisfing initialization) <br />
-===========/soft way (control priority to lead up satisfy the cut first and recognize the status of cut variables)<br/>
+============/soft way (control priority to lead up satisfy the cut first and recognize the status of cut variables)<br/>
                     )<br />
 5.Parallel solver (Genetic combination using graph property(distence/independences)<br />
 6.probalistische local search for one agent<br />

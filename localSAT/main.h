@@ -27,9 +27,10 @@ struct C *clauses;
 struct V *variables;
 
 /*settings*/
-int output_flag;
-int caching_flag;
-int tabu_flag;
+bool output_flag;
+bool caching_flag;
+bool tabu_flag;
+bool seed_flag;
 /*option values*/
 unsigned long long int maxTries;
 unsigned long long int maxFlips;
@@ -44,6 +45,11 @@ void parseOptions(int argc, char *argv[]);
 void printOptions();
 void readFile(const char* fileName);
 void memAllocate(string buff);
-int parseLine(string line, int index);
+void parseLine(string line, int index);
+void printAssignment();
+void initializeSearch();
+void printVariables();
+void printClauses();
+void printAssignment();
 
 #endif /* MAIN_H_ */

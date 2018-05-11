@@ -7,6 +7,7 @@
 #include <vector>
 #include<iostream>
 #include <stdio.h>
+#include <stdlib.h>
 using namespace std;
 
 /*defined structure*/
@@ -18,9 +19,13 @@ struct C{
  struct V{
 	vector<int> posC;
 	vector<int> negC;
+	bool Assign;
  };
 
 void printVector(vector<int>& vec);
 void printUsage();
 void printClause(C& clause);
 void printVariable(V& variable);
+bool randomBoolean();
+int randomIndex(int range);
+

@@ -11,6 +11,7 @@
 /* includes*/
 
 #include <iostream>
+#include <climits>
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
@@ -18,13 +19,17 @@
 #include <fstream>
 #include <string.h>
 #include <vector>
+#include <assert.h>
 #include "miscellaneous.h"
 
-/*problem*/
+
+/*problem and assignment*/
 int numCs;
 int numVs;
 struct C *clauses;
 struct V *variables;
+int* numP;
+vector<int> unsatCs;
 
 /*settings*/
 bool output_flag;
@@ -32,8 +37,8 @@ bool caching_flag;
 bool tabu_flag;
 bool seed_flag;
 /*option values*/
-unsigned long long int maxTries;
-unsigned long long int maxFlips;
+unsigned long long int maxTries = ULLONG_MAX;
+unsigned long long int maxFlips = ULLONG_MAX;
 int seed;
 float cb;
 float cm;
@@ -46,10 +51,18 @@ void printOptions();
 void readFile(const char* fileName);
 void memAllocate(string buff);
 void parseLine(string line, int index);
-void printAssignment();
-void initializeSearch();
+void initializeAssignment();
 void printVariables();
 void printClauses();
 void printAssignment();
+void printUnsatCs();
+int getFlipCandidate(C& clause);
+double func(int index);
+void flip(int j);
+void debug();
+void test();
+int computeMakeScore(int index);
+int computeBreakScore(int index);
+
 
 #endif /* MAIN_H_ */

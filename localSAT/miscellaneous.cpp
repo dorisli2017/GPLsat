@@ -51,7 +51,6 @@ void printUsage(){
 void printClause(C& clause){
 cout<< "numer of variables: " << clause.numLits << endl;
 printVector(clause.lits);
-cout<< "value: " << clause.numP<< endl;
 cout<<endl;
 }
 
@@ -71,3 +70,10 @@ bool randomBoolean(){
 int randomIndex(int range){
 	return rand()% range;
 }
+
+double randomDouble(double fMax)
+{
+	double ran = ((double)rand()/RAND_MAX)*fMax;
+    return ran;
+}
+

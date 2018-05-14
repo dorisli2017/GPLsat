@@ -14,7 +14,6 @@ using namespace std;
 struct C{
 	int numLits;
 	vector<int> lits;
-	int numP;
 };
  struct V{
 	vector<int> posC;
@@ -28,4 +27,5 @@ void printClause(C& clause);
 void printVariable(V& variable);
 bool randomBoolean();
 int randomIndex(int range);
+double randomDouble(double fMax);
 

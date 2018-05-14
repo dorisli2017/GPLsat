@@ -7,29 +7,50 @@
 
 #include "main.h"
 
-int main(int argc, char *argv[])
-{
- /*todo:
-  * parse the argument (including options and filename)
-  * parse the file (clauses and variables)
-  *
-  */
-	/* Finished**********************************/
-
+int main(int argc, char *argv[]){
 	parseOptions(argc, argv);
-	//printOptions();
-	const char* fileName = argv[1];
-	//cout<< "start readFile"<<endl;
-	readFile(fileName);
-	//cout<< "finish readFile"<<endl;
-   	printVariables();
-   	printClauses();
-   	printAssignment();
-	/*Finished**********************************/
-
-
-
+	readFile(argv[1]);
+	int size; int rand;int flipVindex,flipCindex;
+	for(unsigned int i = 0; i <maxTries;i++){
+		initializeAssignment();
+		for(unsigned int j = 0; j < maxFlips; j++){
+			//debug();
+			size =  unsatCs.size();
+			if (size == 0){
+				debug();
+				test();
+				return 0;
+			}
+			rand = randomIndex(size);
+			flipCindex = unsatCs[rand];
+			if(numP[flipCindex] > 0){
+				unsatCs[rand]=unsatCs.back();
+				unsatCs.pop_back();
+				continue;
+			}
+			flipVindex = getFlipCandidate(clauses[flipCindex]);
+			unsatCs[rand]=unsatCs.back();
+			unsatCs.pop_back();
+			flip(flipVindex);
+		}
+	}
+	//test();
+	debug();
     return 0;
+}
+
+void debug(){
+
+	/* Testing code**********************************/
+		//printOptions();
+	   //printVariables();
+	    printClauses();
+	   	printAssignment();
+	   	printUnsatCs();
+
+	/*Testing code**********************************/
+
+
 }
 /*parse the argument (including options and filename)
  *using getopt_long to allow GNU-style long options as well as single-character options
@@ -78,8 +99,9 @@ void parseOptions(int argc, char *argv[]){
 			exit(0);
 		}
 	}
-	if(seed_flag)srand (seed);
-	else srand (time(NULL));
+	if(seed_flag)srand(seed);
+	else srand (0);
+	//else srand (time(NULL));
 }
 // construct the Problem with fill information of the input file
 void readFile(const char* fileName){
@@ -106,14 +128,15 @@ void readFile(const char* fileName){
 		}
 	  getline(fp,buff);
 	}
-	initializeSearch();
    	// Get the clauses
    	int index = -1;
-   	while(!fp.eof()){
+   	int line = 0;
+   	while(!fp.eof() && line < numCs){
    		index++;
 		getline(fp,buff);
 		if(buff.empty()) break;
 		parseLine(buff, index);
+		line++;
    	}
 	//cout<< "out readFile"<<endl;
 };
@@ -121,11 +144,11 @@ void memAllocate(string buff){
 	parseLine(buff,-1);
 	clauses = new C[numCs];
 	variables = new V[numVs];
+	numP = (int*) malloc(sizeof(int) * numCs);
 
 
 }
 void parseLine(string line,int indexC){
-	//cout<< "in parseLine"<<endl;
 	char* str = strdup(line.c_str());
     const char s[2] = " ";
     if( indexC == -1){
@@ -133,7 +156,6 @@ void parseLine(string line,int indexC){
 		strtok(NULL, s);
 		numVs = atoi(strtok(NULL, s))+1;
 		numCs = atoi(strtok(NULL, s));
-		//cout<< "out parseLine"<<endl;
 		return;
     }// for the p line
     int numLits = -1;
@@ -143,22 +165,18 @@ void parseLine(string line,int indexC){
     	++numLits;
 		if(*token== '-'){
 			lit = atoi(token);
-		    clauses[indexC].lits.push_back(lit);
+		    clauses[indexC].lits.push_back(-lit);
 		    variables[-lit].negC.push_back(indexC);
-   			if(variables[-lit].Assign == false)clauses[indexC].numP++;
 			token = strtok(NULL, s);
 			continue;
 		}
 		if(*token == '0'){
 		    clauses[indexC].numLits = numLits;
-		    //printClause(clauses[indexC]);
-			//cout<< "out parseLine"<<endl;
 		    return;
 		}
 		lit = atoi(token);
 	    clauses[indexC].lits.push_back(lit);
 	    variables[lit].posC.push_back(indexC);
-		if(variables[lit].Assign == true)clauses[indexC].numP++;
 		token = strtok(NULL, s);
     }
 	perror("a clause line does not terminates");
@@ -192,15 +210,134 @@ void printClauses(){
    	}
 }
 void printAssignment(){
-	cout<< "Assignment ";
+	cout<< "Assignment: ";
 	for(int i = 0; i < numVs; i++){
-		cout<< i<< ": "<<variables[i].Assign<<"|";
+		cout <<variables[i].Assign<<" ";
 	}
 	cout <<endl ;
 }
 
-void initializeSearch(){
-   	for(int i = 0; i < numVs; i++){
-   		variables[i].Assign = randomBoolean();
+void printUnsatCs(){
+	cout<< "Unsatisfied clauses ";
+	printVector(unsatCs);
+	cout <<endl ;
+}
+void initializeAssignment(){
+   	for(int i = 0; i < numCs; i++){
+   		numP[i] = 0;
    	}
+   	for(int j = 0; j < numVs; j++){
+   		variables[j].Assign = randomBoolean();
+		if(variables[j].Assign == false){
+	   		for (std::vector<int>::const_iterator i = variables[j].negC.begin(); i != variables[j].negC.end(); ++i){
+	   			numP[*i]++;
+	   		}
+		}
+		else{
+			for (std::vector<int>::const_iterator i = variables[j].posC.begin(); i != variables[j].posC.end(); ++i){
+	   			numP[*i]++;
+			}
+   		}
+   	}
+   	for(int i = 0; i < numCs; i++){
+   		if(numP[i] == 0){
+   			//cout<< "******************"<< i << "***************";
+   			unsatCs.push_back(i);
+   		}
+   	}
+}
+int getFlipCandidate(C& clause){
+	int size = clause.numLits;
+	assert(size > 0);
+	double f[size];
+	double sum=0,rand;
+	for(int i = 0; i < size;i++){
+		sum+= func(i);
+		f[i] = sum;
+	}
+	cout << endl;
+	rand = randomDouble(sum);
+	assert(rand >= 0);
+	for(int i = 0; i < size;i++){
+		if(f[i]> rand){
+			return clause.lits[i];
+		}
+	}
+/*	cout<< "the prefix array is ";
+	for(int i = 0; i < size;i++){
+		cout<< f[i]<<" ";
+	}
+	cout<< endl<<"the random is "<< rand <<endl;*/
+	assert(false);
+	return 0;
+}
+//todo:
+double func(int index){
+	return 1;
+}
+void flip(int j){
+	std::vector<int>::const_iterator i;
+	if(variables[j].Assign == false){
+   		for (i = variables[j].negC.begin(); i != variables[j].negC.end(); ++i){
+   			numP[*i]--;
+   			if(numP[*i] == 0) unsatCs.push_back(*i);
+   		}
+		for (i = variables[j].posC.begin(); i != variables[j].posC.end(); ++i){
+   			numP[*i]++;
+		}
+
+		variables[j].Assign = true;
+	}
+	else{
+   		for (i = variables[j].negC.begin(); i != variables[j].negC.end(); ++i){
+   			numP[*i]++;
+   		}
+		for (i = variables[j].posC.begin(); i != variables[j].posC.end(); ++i){
+   			numP[*i]--;
+   			if(numP[*i] == 0) unsatCs.push_back(*i);
+		}
+   			variables[j].Assign = false;
+	}
+}
+void test(){
+	int test[numCs]={0};
+	std::vector<int>::const_iterator i;
+	for(int j = 0; j < numVs; j++){
+		if(variables[j].Assign == true){
+			for (i = variables[j].posC.begin(); i != variables[j].posC.end(); ++i){
+	   			test[*i]++;
+			}
+		}
+		else{
+			for (i = variables[j].negC.begin(); i != variables[j].negC.end(); ++i){
+				test[*i]++;
+			}
+		}
+	}
+	for(int j = 0; j < numCs; j++){
+	assert(test[j]>0);
+	}
+	cout<< "Satis"<< endl;
+}
+//todo:
+int computeMakeScore(int index){
+    int score = 0;
+    vector<int>& occList = variables[index].Assign? variables[index].negC : variables[index].posC;
+    for (int cid : occList) {
+        if (numP[cid] == 0) {
+            score++;
+        }
+    }
+    return score;
+}
+
+int computeBreakScore(int index){
+    int score = 0;
+    vector<int>& occList =variables[index].Assign? variables[index].posC : variables[index].negC;
+    for (int cid : occList) {
+        if (numP[cid]== 1) {
+            score++;
+        }
+    }
+    return score;
 }

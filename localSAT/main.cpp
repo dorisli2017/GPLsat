@@ -9,47 +9,38 @@
 
 int main(int argc, char *argv[]){
 	parseOptions(argc, argv);
-	readFile(argv[1]);
-	int size; int rand;int flipVindex,flipCindex;
+	readFile(fileName);
+	int size;
 	for(unsigned int i = 0; i <maxTries;i++){
 		initializeAssignment();
 		for(unsigned int j = 0; j < maxFlips; j++){
-			//debug();
 			size =  unsatCs.size();
 			if (size == 0){
-				debug();
+				debugAssign();
 				test();
 				return 0;
 			}
-			rand = randomIndex(size);
-			flipCindex = unsatCs[rand];
-			if(numP[flipCindex] > 0){
-				unsatCs[rand]=unsatCs.back();
-				unsatCs.pop_back();
-				continue;
-			}
-			flipVindex = getFlipCandidate(clauses[flipCindex]);
-			unsatCs[rand]=unsatCs.back();
-			unsatCs.pop_back();
-			flip(flipVindex);
+			search();
 		}
 	}
 	//test();
-	debug();
+	debugAssign();
+	//cout<<"out main" <<endl;
     return 0;
 }
-
-void debug(){
-
+void debugProblem(){
+	printOptions();
+	printVariables();
+	printClauses();
+}
+void debugAssign(){
 	/* Testing code**********************************/
-		//printOptions();
-	   //printVariables();
-	    printClauses();
 	   	printAssignment();
 	   	printUnsatCs();
+	   	printNumP();
+
 
 	/*Testing code**********************************/
-
 
 }
 /*parse the argument (including options and filename)
@@ -60,28 +51,28 @@ void parseOptions(int argc, char *argv[]){
 	//The argument longopts must be an array of long option structures.
 	struct option longopts[] ={{"output",no_argument,0,'o' },
 							   {"help",no_argument,0,'h' },
-							   {"caching",no_argument,0,'c' },
 							   {"tabu",no_argument,0,'t' },
 							   {"cb", required_argument,0, 'b'},
 							   {"seed", required_argument,0, 's'},
 							   {"cm", required_argument,0, 'm'},
+							   {"w", required_argument,0, 'w'},
 							   {"Rounds", required_argument,0, 'r'},
 							   {"Flips", required_argument,0, 'p'},
 							   { "eps", required_argument, 0, 'e' },
 							   {"function", required_argument,0, 'f'},
+							   {"algorithm", required_argument,0, 'a'},
 	                           //the opt array must terminate with a all zero element.
 							   {0,0,0,0}
 	                          };
 	int result;
 	int option_index = 0;
-	while ((result = getopt_long(argc, argv, "ohcts:m:r:p:e:f:b:",longopts,&option_index)) != -1){
+	while ((result = getopt_long(argc, argv, "ohts:m:w:r:p:e:f:a:b:",longopts,&option_index)) != -1){
 		switch (result) {
 		case 'o': output_flag = true; break;
 		case 'h':
 			printUsage();
 			exit(0);
 			break;
-		case 'c': caching_flag = true; break;
 		case 's': {
 			seed_flag = true;
 			seed = atoi(optarg);
@@ -90,18 +81,40 @@ void parseOptions(int argc, char *argv[]){
 		case 't': tabu_flag = true; break;
 		case 'b': cb = atof(optarg); break;
 		case 'm': cm = atof(optarg); break;
+		case 'w': w = atof(optarg); break;
 		case 'r': maxTries = strtoull(optarg,NULL,0); break;
 		case 'p': maxFlips = strtoull(optarg,NULL,0); break;
 		case 'e': eps = atof(optarg); break;
-		case 'f': fkt = atoi(optarg); break;
+		case 'f': fct = atoi(optarg); break;
+		case 'a': alg = atoi(optarg); break;
 		default:
 			printUsage();
 			exit(0);
 		}
 	}
+	if (optind == argc) {
+		printf("ERROR: FILE is not given\n");
+		printUsage();
+		exit(0);
+	}
+	fileName = *(argv + optind);
+
+//set the parameters
+	// set seed
 	if(seed_flag)srand(seed);
 	else srand (0);
 	//else srand (time(NULL));
+	switch (fct){
+	case 0:func = func_poly;break;
+	case 1:func = func_exp;break;
+	default:func = func_equal;
+	}
+	switch (alg){
+	case 0:search = search_prob;break;
+	case 1:search = search_lawa;break;
+	default:search = search_wa;
+	}
+
 }
 // construct the Problem with fill information of the input file
 void readFile(const char* fileName){
@@ -145,8 +158,6 @@ void memAllocate(string buff){
 	clauses = new C[numCs];
 	variables = new V[numVs];
 	numP = (int*) malloc(sizeof(int) * numCs);
-
-
 }
 void parseLine(string line,int indexC){
 	char* str = strdup(line.c_str());
@@ -185,14 +196,15 @@ void parseLine(string line,int indexC){
 void printOptions(){
 	printf("localSAT options: \n");
 	cout<<"output_flag: "<<output_flag<<endl;
-	cout<<"caching_flag: "<<caching_flag<<endl;
 	cout<<"tabu_flag: "<<tabu_flag<<endl;
 	cout<<"cb: "<<cb<<endl;
 	cout<<"cm: "<<cm<<endl;
+	cout<<"w: "<<w<<endl;
 	cout<<"maxTries: "<<maxTries<<endl;
 	cout<<"maxFlips: "<<maxFlips<<endl;
 	cout<<"eps: "<<eps<<endl;
-	cout<<"function: "<<fkt<<endl;
+	cout<<"algorithm: "<<alg<<endl;
+	cout<<"function: "<<fct<<endl;
 	cout<<"seed: "<<seed<<endl;
 }
 void printVariables(){
@@ -216,18 +228,24 @@ void printAssignment(){
 	}
 	cout <<endl ;
 }
-
 void printUnsatCs(){
 	cout<< "Unsatisfied clauses ";
 	printVector(unsatCs);
 	cout <<endl ;
+}
+void printNumP(){
+	cout<< "numP: ";
+	for(int i = 0; i < numCs; i++){
+		cout << numP[i]<< " ";
+	}
+	cout<<endl;
 }
 void initializeAssignment(){
    	for(int i = 0; i < numCs; i++){
    		numP[i] = 0;
    	}
    	for(int j = 0; j < numVs; j++){
-   		variables[j].Assign = randomBoolean();
+   		variables[j].Assign = (rand()%2 ==1);
 		if(variables[j].Assign == false){
 	   		for (std::vector<int>::const_iterator i = variables[j].negC.begin(); i != variables[j].negC.end(); ++i){
 	   			numP[*i]++;
@@ -246,34 +264,25 @@ void initializeAssignment(){
    		}
    	}
 }
-int getFlipCandidate(C& clause){
+int getFlipCandidate(int cIndex){
+	C& clause = clauses[cIndex];
 	int size = clause.numLits;
 	assert(size > 0);
 	double f[size];
-	double sum=0,rand;
+	double sum=0,randD;
 	for(int i = 0; i < size;i++){
 		sum+= func(i);
 		f[i] = sum;
 	}
-	cout << endl;
-	rand = randomDouble(sum);
-	assert(rand >= 0);
+	randD = ((double)rand()/RAND_MAX)*sum;
+	assert(randD >= 0);
 	for(int i = 0; i < size;i++){
-		if(f[i]> rand){
+		if(f[i]> randD){
 			return clause.lits[i];
 		}
 	}
-/*	cout<< "the prefix array is ";
-	for(int i = 0; i < size;i++){
-		cout<< f[i]<<" ";
-	}
-	cout<< endl<<"the random is "<< rand <<endl;*/
 	assert(false);
 	return 0;
-}
-//todo:
-double func(int index){
-	return 1;
 }
 void flip(int j){
 	std::vector<int>::const_iterator i;
@@ -319,25 +328,115 @@ void test(){
 	}
 	cout<< "Satis"<< endl;
 }
-//todo:
 int computeMakeScore(int index){
     int score = 0;
     vector<int>& occList = variables[index].Assign? variables[index].negC : variables[index].posC;
-    for (int cid : occList) {
-        if (numP[cid] == 0) {
+	//cout<< "in make "<<endl;
+	for (std::vector<int>::const_iterator i = occList.begin(); i != occList.end(); ++i){
+        if (numP[*i] == 0) {
             score++;
         }
     }
+	//cout<< "out make "<<endl;
     return score;
 }
-
 int computeBreakScore(int index){
+	//cout<< "in break "<<endl;
     int score = 0;
     vector<int>& occList =variables[index].Assign? variables[index].posC : variables[index].negC;
-    for (int cid : occList) {
-        if (numP[cid]== 1) {
+    for(std::vector<int>::const_iterator i = occList.begin(); i != occList.end(); ++i) {
+        if (numP[*i]== 1) {
             score++;
         }
     }
+	//cout<< "out make "<<endl;
     return score;
+}
+double func_equal(int index){
+	return 1.0;
+}
+double func_exp(int index){
+	//cout<< "in func_exp "<<endl;
+	return pow(cm,computeMakeScore(index))*pow(cb,-(computeBreakScore(index)+eps));
+	//cout<< "out func_exp "<<endl;
+};
+double func_poly(int index){
+	return pow((eps+computeBreakScore(index)),-cb);
+}
+
+void search_prob(){
+	int randC = rand()%unsatCs.size();
+	int flipCindex = unsatCs[randC];
+	if(numP[flipCindex] > 0){
+		unsatCs[randC]=unsatCs.back();
+		unsatCs.pop_back();
+		return;
+	}
+	int flipVindex = getFlipCandidate(flipCindex);
+	unsatCs[randC]=unsatCs.back();
+	unsatCs.pop_back();
+	flip(flipVindex);
+}
+
+void search_lawa(){
+	int randC = rand()%unsatCs.size();
+	int flipCindex = unsatCs[randC];
+	if(numP[flipCindex] > 0){
+		unsatCs[randC]=unsatCs.back();
+		unsatCs.pop_back();
+		return;
+	}
+	if(clauses[flipCindex].numLits == 1){
+		unsatCs[randC]=unsatCs.back();
+		unsatCs.pop_back();
+		flip(0);
+		return;
+	}
+	int vRange = clauses[flipCindex].numLits;
+    int id1 = rand() % vRange;
+    int id2 = rand() % vRange;
+    while(id1 == id2) {
+        id1 = rand() % vRange;
+        id2 = rand() % vRange;
+    }
+    int lit1 = clauses[flipCindex].lits[id1];
+    int lit2 = clauses[flipCindex].lits[id2];
+    int score1 = computeMakeScore(lit1) - computeBreakScore(lit1);
+    int score2 = computeMakeScore(lit2) - computeBreakScore(lit2);
+    if (score1 == score2) {
+        flip(lit1);
+        flip(lit2);
+    } else {
+        int toFlip = score1 > score2 ? lit1 : lit2;
+        flip(toFlip);
+    }
+}
+
+void search_wa(){
+	int randC = 	rand()% unsatCs.size();
+	int flipCindex = unsatCs[randC];
+	if(numP[flipCindex] > 0){
+		unsatCs[randC]=unsatCs.back();
+		unsatCs.pop_back();
+		return;
+	}
+	int flipVindex = getFlipCandidate_wa(flipCindex);
+	unsatCs[randC]=unsatCs.back();
+	unsatCs.pop_back();
+	flip(flipVindex);
+
+}
+
+// todo: improvement still posssible. Not implement the part to get the best one if not greedy.
+int getFlipCandidate_wa(int cIndex){
+	C& clause = clauses[cIndex];
+    vector<int>& vList = clause.lits;
+	for (std::vector<int>::const_iterator i = vList.begin(); i != vList.end(); ++i){
+		if(computeBreakScore(*i)==0){
+			return *i;
+		}
+	}
+	return rand()% clause.numLits;
+
+
 }

@@ -25,7 +25,5 @@ void printVector(vector<int>& vec);
 void printUsage();
 void printClause(C& clause);
 void printVariable(V& variable);
-bool randomBoolean();
-int randomIndex(int range);
 double randomDouble(double fMax);
 

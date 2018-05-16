@@ -30,10 +30,12 @@ void printUsage(){
 	printf("\n-------------------Options------------------------------------------------------\n");
 	printf("\n");
 	printf("**for the potential flipping function:\n");
-	printf("   --function, -f: 0 =  polynomial; 1 = exponential [default = 0]\n");
-	printf("   --eps, -e <float value> [0.0,1.0] :  [default = 1.0]\n");
-	printf("   --cb, -b <float value>  [2.0,10.0] : constant for break\n");
-	printf("   --cm, -m <float value>  [-2.0,2.0] : constant for make\n");
+	printf("   --algorithm, -a: 0 =  probSAT; 1 = LAZYWALKER 2 = WALKSAT [default = 0]\n");
+	printf("   --function, -f: 0 =  polynomial; 1 = exponential 2 = equal [default = 0]\n");
+	printf("   --eps, -e <double value> [0.0,1.0] :  [default = 1.0]\n");
+	printf("   --cb, -b <double value>  [2.0,10.0] : constant for break\n");
+	printf("   --cm, -m <double value>  [-2.0,2.0] : constant for make\n");
+	printf("   --w, -w <double value>  [0.0,1.0] : [default = 0.3] the probability used only in the WALKSAT\n");
 	printf("\n");
 	printf("**for the process:\n");
 	printf("   --caching, -c  : 0 =  no caching ; 1 = caching  for scores\n");
@@ -63,13 +65,6 @@ printVector(variable.negC);
 cout<<endl;
 }
 
-bool randomBoolean(){
-	return rand()%2 ==1;
-}
-
-int randomIndex(int range){
-	return rand()% range;
-}
 
 double randomDouble(double fMax)
 {

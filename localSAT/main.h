@@ -2,7 +2,7 @@
  * main.h
  *
  *  Created on: May 8, 2018
- *      Author: ping
+ *      Author: Guangping Li
  */
 
 #ifndef MAIN_H_

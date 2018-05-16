@@ -79,4 +79,5 @@ void (*search)(void)=NULL;
 void search_lawa();
 void search_wa();
 int getFlipCandidate_wa(int cIndex);
+int getFlipCandidate_max(int cIndex);
 #endif /* MAIN_H_ */

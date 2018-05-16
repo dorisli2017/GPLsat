@@ -16,8 +16,10 @@ int main(int argc, char *argv[]){
 		for(unsigned int j = 0; j < maxFlips; j++){
 			size =  unsatCs.size();
 			if (size == 0){
-				debugAssign();
-				test();
+				/*debugAssign();
+				test();*/
+				cout<< "s SATISFIABLE"<< endl;
+				printAssignment();
 				return 0;
 			}
 			search();
@@ -176,7 +178,7 @@ void parseLine(string line,int indexC){
     	++numLits;
 		if(*token== '-'){
 			lit = atoi(token);
-		    clauses[indexC].lits.push_back(-lit);
+		    clauses[indexC].vars.push_back(-lit);
 		    variables[-lit].negC.push_back(indexC);
 			token = strtok(NULL, s);
 			continue;
@@ -186,7 +188,7 @@ void parseLine(string line,int indexC){
 		    return;
 		}
 		lit = atoi(token);
-	    clauses[indexC].lits.push_back(lit);
+	    clauses[indexC].vars.push_back(lit);
 	    variables[lit].posC.push_back(indexC);
 		token = strtok(NULL, s);
     }
@@ -195,17 +197,17 @@ void parseLine(string line,int indexC){
 }
 void printOptions(){
 	printf("localSAT options: \n");
-	cout<<"output_flag: "<<output_flag<<endl;
-	cout<<"tabu_flag: "<<tabu_flag<<endl;
-	cout<<"cb: "<<cb<<endl;
-	cout<<"cm: "<<cm<<endl;
-	cout<<"w: "<<w<<endl;
-	cout<<"maxTries: "<<maxTries<<endl;
-	cout<<"maxFlips: "<<maxFlips<<endl;
-	cout<<"eps: "<<eps<<endl;
-	cout<<"algorithm: "<<alg<<endl;
-	cout<<"function: "<<fct<<endl;
-	cout<<"seed: "<<seed<<endl;
+	cout<<"c output_flag: "<<output_flag<<endl;
+	cout<<"c tabu_flag: "<<tabu_flag<<endl;
+	cout<<"c cb: "<<cb<<endl;
+	cout<<"c cm: "<<cm<<endl;
+	cout<<"c w: "<<w<<endl;
+	cout<<"c maxTries: "<<maxTries<<endl;
+	cout<<"c maxFlips: "<<maxFlips<<endl;
+	cout<<"c eps: "<<eps<<endl;
+	cout<<"c algorithm: "<<alg<<endl;
+	cout<<"c function: "<<fct<<endl;
+	cout<<"c seed: "<<seed<<endl;
 }
 void printVariables(){
 	cout<< "Variables "<< ": " <<endl ;
@@ -222,9 +224,10 @@ void printClauses(){
    	}
 }
 void printAssignment(){
-	cout<< "Assignment: ";
-	for(int i = 0; i < numVs; i++){
-		cout <<variables[i].Assign<<" ";
+	cout<< "v ";
+	for(int i = 1; i < numVs; i++){
+		if(variables[i].Assign) cout <<i<<" ";
+		else cout << -i<<" ";
 	}
 	cout <<endl ;
 }
@@ -266,19 +269,21 @@ void initializeAssignment(){
 }
 int getFlipCandidate(int cIndex){
 	C& clause = clauses[cIndex];
-	int size = clause.numLits;
+    vector<int>& vList = clause.vars;
+	int size = clause.numLits,j=0;
 	assert(size > 0);
 	double f[size];
 	double sum=0,randD;
-	for(int i = 0; i < size;i++){
-		sum+= func(i);
-		f[i] = sum;
+	for (std::vector<int>::const_iterator i = vList.begin(); i != vList.end(); ++i){
+		sum+= func(*i);
+		f[j]= sum;
+		j++;
 	}
 	randD = ((double)rand()/RAND_MAX)*sum;
 	assert(randD >= 0);
 	for(int i = 0; i < size;i++){
 		if(f[i]> randD){
-			return clause.lits[i];
+			return clause.vars[i];
 		}
 	}
 	assert(false);
@@ -326,7 +331,7 @@ void test(){
 	for(int j = 0; j < numCs; j++){
 	assert(test[j]>0);
 	}
-	cout<< "Satis"<< endl;
+	cout<< "s SATISFIABLE"<< endl;
 }
 int computeMakeScore(int index){
     int score = 0;
@@ -399,8 +404,8 @@ void search_lawa(){
         id1 = rand() % vRange;
         id2 = rand() % vRange;
     }
-    int lit1 = clauses[flipCindex].lits[id1];
-    int lit2 = clauses[flipCindex].lits[id2];
+    int lit1 = clauses[flipCindex].vars[id1];
+    int lit2 = clauses[flipCindex].vars[id2];
     int score1 = computeMakeScore(lit1) - computeBreakScore(lit1);
     int score2 = computeMakeScore(lit2) - computeBreakScore(lit2);
     if (score1 == score2) {
@@ -427,16 +432,27 @@ void search_wa(){
 
 }
 
-// todo: improvement still posssible. Not implement the part to get the best one if not greedy.
+// todo: improvement still posssible.Break value calculated twice.
 int getFlipCandidate_wa(int cIndex){
 	C& clause = clauses[cIndex];
-    vector<int>& vList = clause.lits;
+    vector<int>& vList = clause.vars;
 	for (std::vector<int>::const_iterator i = vList.begin(); i != vList.end(); ++i){
 		if(computeBreakScore(*i)==0){
 			return *i;
 		}
 	}
-	return rand()% clause.numLits;
-
-
+	if(((double)rand()/RAND_MAX) < w) 	return rand()% clause.numLits;
+	int maxIndex;
+	double max = -1, candidate = -1;
+	for (std::vector<int>::const_iterator i = vList.begin(); i != vList.end(); ++i){
+		candidate = func(*i);
+		if(candidate> max){
+		max = candidate;
+		maxIndex = *i;
+		}
+	}
+	return maxIndex;
 }
+
+
+

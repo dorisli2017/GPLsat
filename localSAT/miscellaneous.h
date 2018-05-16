@@ -13,7 +13,7 @@ using namespace std;
 /*defined structure*/
 struct C{
 	int numLits;
-	vector<int> lits;
+	vector<int> vars;
 };
  struct V{
 	vector<int> posC;
@@ -25,5 +25,4 @@ void printVector(vector<int>& vec);
 void printUsage();
 void printClause(C& clause);
 void printVariable(V& variable);
-double randomDouble(double fMax);
 

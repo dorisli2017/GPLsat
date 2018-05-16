@@ -52,7 +52,7 @@ void printUsage(){
 
 void printClause(C& clause){
 cout<< "numer of variables: " << clause.numLits << endl;
-printVector(clause.lits);
+printVector(clause.vars);
 cout<<endl;
 }
 
@@ -66,9 +66,4 @@ cout<<endl;
 }
 
 
-double randomDouble(double fMax)
-{
-	double ran = ((double)rand()/RAND_MAX)*fMax;
-    return ran;
-}
 

@@ -1,5 +1,3 @@
-main.d: ../main.cpp ../main.h ../miscellaneous.h
+main.d: ../main.cpp ../main.h
 
 ../main.h:
-
-../miscellaneous.h:

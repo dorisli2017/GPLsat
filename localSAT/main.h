@@ -20,9 +20,12 @@
 #include <string.h>
 #include <vector>
 #include <assert.h>
-#include "miscellaneous.h"
 #include <math.h>
-
+#include <vector>
+#include<iostream>
+#include <stdio.h>
+#include <stdlib.h>
+using namespace std;
 
 /*problem and assignment*/
 char* fileName;
@@ -32,6 +35,19 @@ struct C *clauses;
 struct V *variables;
 int* numP;
 vector<int> unsatCs;
+
+/*defined structure*/
+struct C{
+	int numLits;
+	vector<int> vars;
+};
+ struct V{
+	vector<int> posC;
+	vector<int> negC;
+	bool Assign;
+ };
+
+
 
 
 /*settings*/
@@ -81,4 +97,9 @@ void search_lawa();
 void search_wa();
 int getFlipCandidate_wa(int cIndex);
 int getFlipCandidate_max(int cIndex);
+void printVector(vector<int>& vec);
+void printUsage();
+void printClause(C& clause);
+void printVariable(V& variable);
+
 #endif /* MAIN_H_ */

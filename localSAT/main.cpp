@@ -333,7 +333,8 @@ void flip(int j){
 	}
 }
 void test(){
-	int test[numCs]={0};
+	int test[numCs];
+	memset(test, 0, sizeof(test));
 	std::vector<int>::const_iterator i;
 	for(int j = 0; j < numVs; j++){
 		if(variables[j].Assign == true){

@@ -66,6 +66,7 @@ void printNumP();
 int getFlipCandidate(int cIndex);
 double (*func)(int) = NULL;
 double func_equal(int index);
+double func_exp_make(int index);
 double func_exp(int index);
 double func_poly(int index);
 void flip(int j);

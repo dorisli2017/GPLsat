@@ -108,7 +108,8 @@ void parseOptions(int argc, char *argv[]){
 	//else srand (time(NULL));
 	switch (fct){
 	case 0:func = func_poly;break;
-	case 1:func = func_exp;break;
+	case 1:func = func_exp_make;break;
+	case 2:func = func_exp;break;
 	default:func = func_equal;
 	}
 	switch (alg){
@@ -206,7 +207,25 @@ void printOptions(){
 	cout<<"c maxFlips: "<<maxFlips<<endl;
 	cout<<"c eps: "<<eps<<endl;
 	cout<<"c algorithm: "<<alg<<endl;
-	cout<<"c function: "<<fct<<endl;
+	switch(fct){
+	case 0:{
+		cout<<"c polynomial function"<<endl;
+		cout<<"c eps: "<<eps<<endl;
+		cout<<"c cb: "<<cb<<endl;
+		cout<< "pow((eps+break),-cb)" << endl;
+		break;
+		  }
+	case 1:{
+		cout<<"c exponential function with make"<<endl;
+		cout<<"c cm: "<<cm<<endl;
+		cout<<"c cb: "<<cb<<endl;
+		cout<< "pow(cm,make)*pow(cb,-break)"<< endl;
+		break;
+		   }
+	case 2:{
+		cout<<"c equal function (== 1.0)"<<endl;
+	       }
+	}
 	cout<<"c seed: "<<seed<<endl;
 }
 void printVariables(){
@@ -360,11 +379,15 @@ int computeBreakScore(int index){
 double func_equal(int index){
 	return 1.0;
 }
-double func_exp(int index){
+double func_exp_make(int index){
 	//cout<< "in func_exp "<<endl;
-	return pow(cm,computeMakeScore(index))*pow(cb,-(computeBreakScore(index)+eps));
+	return pow(cm,computeMakeScore(index))*pow(cb,-computeBreakScore(index));
 	//cout<< "out func_exp "<<endl;
 };
+
+double func_exp(int index){
+	return pow(cb,-computeBreakScore(index));
+}
 double func_poly(int index){
 	return pow((eps+computeBreakScore(index)),-cb);
 }

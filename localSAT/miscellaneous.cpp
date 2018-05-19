@@ -31,7 +31,7 @@ void printUsage(){
 	printf("\n");
 	printf("**for the potential flipping function:\n");
 	printf("   --algorithm, -a: 0 =  probSAT; 1 = LAZYWALKER 2 = WALKSAT [default = 0]\n");
-	printf("   --function, -f: 0 =  polynomial; 1 = exponential 2 = equal [default = 0]\n");
+	printf("   --function, -f: 0 =  polynomial; 1 = exponential with make; 2 = exponential only with break: 3 = equal  [default = 0]\n");
 	printf("   --eps, -e <double value> [0.0,1.0] :  [default = 1.0]\n");
 	printf("   --cb, -b <double value>  [2.0,10.0] : constant for break\n");
 	printf("   --cm, -m <double value>  [-2.0,2.0] : constant for make\n");

@@ -1,6 +1,6 @@
 CC=g++
-CFLAGS=-c -Wall -g -pg -O3 -fopenmp
-LDFLAGS=-g -pg -fopenmp
+CFLAGS=-c -Wall -g  -O3 
+LDFLAGS=-g 
 OBJECTS=main.o  miscellaneous.o 
 EXECUTABLE=local
 

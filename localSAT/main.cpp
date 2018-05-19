@@ -104,8 +104,8 @@ void parseOptions(int argc, char *argv[]){
 //set the parameters
 	// set seed
 	if(seed_flag)srand(seed);
-	else srand (0);
-	//else srand (time(NULL));
+	//else srand (0);
+	else srand (time(NULL));
 	switch (fct){
 	case 0:func = func_poly;break;
 	case 1:func = func_exp_make;break;

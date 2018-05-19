@@ -63,7 +63,7 @@ double cb=3.6;
 double cm=0.5;
 double w = 0.3;// The probability used in the WALKSAT algorithm
 float eps= 1.0;
-int fct= 0;
+int fct= 2;
 int alg = 0;
 
 

@@ -36,14 +36,10 @@ struct V *variables;
 int* numP;
 vector<int> unsatCs;
 double* probs;
+bool* assign;
+vector<int>* posC;
+vector<int>* negC;
 int maxOcc;
-
- struct V{
-	vector<int> posC;
-	vector<int> negC;
-	bool Assign;
- };
-
 double* lookUpTable;
 
 
@@ -90,6 +86,5 @@ int getFlipCandidate_wa(int cIndex);
 int getFlipCandidate_max(int cIndex);
 void printVector(vector<int>& vec);
 void printUsage();
-void printVariable(V& variable);
 
 #endif /* MAIN_H_ */

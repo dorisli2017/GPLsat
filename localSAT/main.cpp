@@ -11,7 +11,6 @@ int main(int argc, char *argv[]){
 	parseOptions(argc, argv);
 	readFile(fileName);
 	initLookUpTable();
-	//debugProblem();
 	int size;
 	for(unsigned int i = 0; i <maxTries;i++){
 		initializeAssignment();
@@ -150,9 +149,11 @@ void readFile(const char* fileName){
 void memAllocate(string buff){
 	parseLine(buff,-1);
 	clauses = new vector<int>[numCs];
-	variables = new V[numVs];
+	posC= new vector<int>[numVs];
+	negC= new vector<int>[numVs];
 	numP = (int*) malloc(sizeof(int) * numCs);
 	probs = (double*)malloc(sizeof(double) * numVs);
+	assign = (bool*)malloc(sizeof(bool) * numVs);
 }
 void parseLine(string line,int indexC){
 	char* str = strdup(line.c_str());
@@ -171,8 +172,9 @@ void parseLine(string line,int indexC){
 		if(*token== '-'){
 			lit = atoi(token);
 		    clauses[indexC].push_back(-lit);
-		    variables[-lit].negC.push_back(indexC);
+		    negC[-lit].push_back(indexC);
 			token = strtok(NULL, s);
+
 			continue;
 		}
 		if(*token == '0'){
@@ -180,7 +182,7 @@ void parseLine(string line,int indexC){
 		}
 		lit = atoi(token);
 	    clauses[indexC].push_back(lit);
-	    variables[lit].posC.push_back(indexC);
+	    posC[lit].push_back(indexC);
 		token = strtok(NULL, s);
     }
 	perror("a clause line does not terminates");
@@ -220,8 +222,8 @@ void printOptions(){
 void printVariables(){
 	cout<< "Variables "<< ": " <<endl ;
    	for(int i = 0; i < numVs; i++){
-   		cout<< "Variable "<< i<< ": " ;
-   		printVariable(variables[i]);
+   		printVector(posC[i]);
+   		printVector(negC[i]);
    	}
 }
 void printClauses(){
@@ -234,7 +236,7 @@ void printClauses(){
 void printAssignment(){
 	cout<< "v ";
 	for(int i = 1; i < numVs; i++){
-		if(variables[i].Assign) cout <<i<<" ";
+		if(assign[i]) cout <<i<<" ";
 		else cout << -i<<" ";
 	}
 	cout <<endl ;
@@ -256,14 +258,14 @@ void initializeAssignment(){
    		numP[i] = 0;
    	}
    	for(int j = 0; j < numVs; j++){
-   		variables[j].Assign = (rand()%2 ==1);
-		if(variables[j].Assign == false){
-	   		for (std::vector<int>::const_iterator i = variables[j].negC.begin(); i != variables[j].negC.end(); ++i){
+   		assign[j] = (rand()%2 ==1);
+		if(assign[j] == false){
+	   		for (std::vector<int>::const_iterator i = negC[j].begin(); i != negC[j].end(); ++i){
 	   			numP[*i]++;
 	   		}
 		}
 		else{
-			for (std::vector<int>::const_iterator i = variables[j].posC.begin(); i != variables[j].posC.end(); ++i){
+			for (std::vector<int>::const_iterator i = posC[j].begin(); i != posC[j].end(); ++i){
 	   			numP[*i]++;
 			}
    		}
@@ -281,7 +283,7 @@ int getFlipCandidate(int cIndex){
 	double sum=0,randD;
 	for (std::vector<int>::const_iterator i = vList.begin(); i != vList.end(); ++i){
 		bre = computeBreakScore(*i);
-		if(bre == 0) return *i;
+		//if(bre == 0) return *i;
 		sum+= lookUpTable[bre];
 		probs[j]= sum;
 		j++;
@@ -298,26 +300,26 @@ int getFlipCandidate(int cIndex){
 }
 void flip(int j){
 	std::vector<int>::const_iterator i;
-	if(variables[j].Assign == false){
-   		for (i = variables[j].negC.begin(); i != variables[j].negC.end(); ++i){
+	if(assign[j] == false){
+   		for (i = negC[j].begin(); i != negC[j].end(); ++i){
    			numP[*i]--;
    			if(numP[*i] == 0) unsatCs.push_back(*i);
    		}
-		for (i = variables[j].posC.begin(); i != variables[j].posC.end(); ++i){
+		for (i = posC[j].begin(); i != posC[j].end(); ++i){
    			numP[*i]++;
 		}
 
-		variables[j].Assign = true;
+		assign[j] = true;
 	}
 	else{
-   		for (i = variables[j].negC.begin(); i != variables[j].negC.end(); ++i){
+   		for (i = negC[j].begin(); i != negC[j].end(); ++i){
    			numP[*i]++;
    		}
-		for (i = variables[j].posC.begin(); i != variables[j].posC.end(); ++i){
+		for (i = posC[j].begin(); i != posC[j].end(); ++i){
    			numP[*i]--;
    			if(numP[*i] == 0) unsatCs.push_back(*i);
 		}
-   			variables[j].Assign = false;
+		assign[j]= false;
 	}
 }
 void test(){
@@ -325,13 +327,13 @@ void test(){
 	memset(test, 0, sizeof(test));
 	std::vector<int>::const_iterator i;
 	for(int j = 0; j < numVs; j++){
-		if(variables[j].Assign == true){
-			for (i = variables[j].posC.begin(); i != variables[j].posC.end(); ++i){
+		if(assign[j] == true){
+			for (i = posC[j].begin(); i != posC[j].end(); ++i){
 	   			test[*i]++;
 			}
 		}
 		else{
-			for (i = variables[j].negC.begin(); i != variables[j].negC.end(); ++i){
+			for (i = negC[j].begin(); i != negC[j].end(); ++i){
 				test[*i]++;
 			}
 		}
@@ -344,7 +346,7 @@ void test(){
 int computeBreakScore(int index){
 	//cout<< "in break "<<endl;
     int score = 0;
-    vector<int>& occList =variables[index].Assign? variables[index].posC : variables[index].negC;
+    vector<int>& occList =assign[index]? posC[index] :negC[index];
     for(std::vector<int>::const_iterator i = occList.begin(); i != occList.end(); ++i) {
         if (numP[*i]== 1) {
             score++;
@@ -420,15 +422,6 @@ void printUsage(){
 	printf("---------------------------------------------------------------------------------\n");
 }
 
-
-void printVariable(V& variable){
-cout<< variable.Assign << endl;
-cout<< "positiv clauses: " << endl;
-printVector(variable.posC);
-cout<< "negative clauses: " << endl;
-printVector(variable.negC);
-cout<<endl;
-}
 
 void initLookUpTable_exp(){
 	lookUpTable = (double*)malloc(sizeof(double) * numCs);

@@ -31,23 +31,19 @@ using namespace std;
 char* fileName;
 int numCs;
 int numVs;
-struct C *clauses;
+vector<int>* clauses;
 struct V *variables;
 int* numP;
 vector<int> unsatCs;
+double* probs;
 
-/*defined structure*/
-struct C{
-	int numLits;
-	vector<int> vars;
-};
  struct V{
 	vector<int> posC;
 	vector<int> negC;
 	bool Assign;
  };
 
-
+double* lookUpTable;
 
 
 /*settings*/
@@ -64,7 +60,6 @@ double cm=0.5;
 double w = 0.3;// The probability used in the WALKSAT algorithm
 float eps= 1.0;
 int fct= 2;
-int alg = 0;
 
 
 /*methods*/
@@ -80,11 +75,9 @@ void printAssignment();
 void printUnsatCs();
 void printNumP();
 int getFlipCandidate(int cIndex);
-double (*func)(int) = NULL;
-double func_equal(int index);
-double func_exp_make(int index);
-double func_exp(int index);
-double func_poly(int index);
+void (*initLookUpTable)(void) = NULL;
+void initLookUpTable_exp(void);
+void initLookUpTable_poly(void);
 void flip(int j);
 void debugProblem();
 void debugAssign();
@@ -92,14 +85,10 @@ void test();
 int computeMakeScore(int index);
 int computeBreakScore(int index);
 void search_prob();
-void (*search)(void)=NULL;
-void search_lawa();
-void search_wa();
 int getFlipCandidate_wa(int cIndex);
 int getFlipCandidate_max(int cIndex);
 void printVector(vector<int>& vec);
 void printUsage();
-void printClause(C& clause);
 void printVariable(V& variable);
 
 #endif /* MAIN_H_ */

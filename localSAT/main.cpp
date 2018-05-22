@@ -10,24 +10,25 @@
 int main(int argc, char *argv[]){
 	parseOptions(argc, argv);
 	readFile(fileName);
+	initLookUpTable();
+	//debugProblem();
 	int size;
 	for(unsigned int i = 0; i <maxTries;i++){
 		initializeAssignment();
 		for(unsigned int j = 0; j < maxFlips; j++){
 			size =  unsatCs.size();
 			if (size == 0){
-				/*debugAssign();
-				test();*/
+				//debugAssign();
+				//test();
 				cout<< "s SATISFIABLE"<< endl;
-				printAssignment();
+				//printAssignment();
 				return 0;
 			}
-			search();
+			search_prob();
 		}
 	}
 	//test();
 	debugAssign();
-	//cout<<"out main" <<endl;
     return 0;
 }
 void debugProblem(){
@@ -62,13 +63,12 @@ void parseOptions(int argc, char *argv[]){
 							   {"Flips", required_argument,0, 'p'},
 							   { "eps", required_argument, 0, 'e' },
 							   {"function", required_argument,0, 'f'},
-							   {"algorithm", required_argument,0, 'a'},
 	                           //the opt array must terminate with a all zero element.
 							   {0,0,0,0}
 	                          };
 	int result;
 	int option_index = 0;
-	while ((result = getopt_long(argc, argv, "ohts:m:w:r:p:e:f:a:b:",longopts,&option_index)) != -1){
+	while ((result = getopt_long(argc, argv, "ohts:m:w:r:p:e:f:b:",longopts,&option_index)) != -1){
 		switch (result) {
 		case 'o': output_flag = true; break;
 		case 'h':
@@ -88,7 +88,6 @@ void parseOptions(int argc, char *argv[]){
 		case 'p': maxFlips = strtoull(optarg,NULL,0); break;
 		case 'e': eps = atof(optarg); break;
 		case 'f': fct = atoi(optarg); break;
-		case 'a': alg = atoi(optarg); break;
 		default:
 			printUsage();
 			exit(0);
@@ -104,20 +103,12 @@ void parseOptions(int argc, char *argv[]){
 //set the parameters
 	// set seed
 	if(seed_flag)srand(seed);
-	//else srand (0);
-	else srand (time(NULL));
+	else srand (0);
+	//else srand (time(NULL));
 	switch (fct){
-	case 0:func = func_poly;break;
-	case 1:func = func_exp_make;break;
-	case 2:func = func_exp;break;
-	default:func = func_equal;
+	case 0:initLookUpTable = initLookUpTable_poly;break;
+	default:initLookUpTable = initLookUpTable_exp;break;
 	}
-	switch (alg){
-	case 0:search = search_prob;break;
-	case 1:search = search_lawa;break;
-	default:search = search_wa;
-	}
-
 }
 // construct the Problem with fill information of the input file
 void readFile(const char* fileName){
@@ -158,9 +149,10 @@ void readFile(const char* fileName){
 };
 void memAllocate(string buff){
 	parseLine(buff,-1);
-	clauses = new C[numCs];
+	clauses = new vector<int>[numCs];
 	variables = new V[numVs];
 	numP = (int*) malloc(sizeof(int) * numCs);
+	probs = (double*)malloc(sizeof(double) * numVs);
 }
 void parseLine(string line,int indexC){
 	char* str = strdup(line.c_str());
@@ -179,17 +171,16 @@ void parseLine(string line,int indexC){
     	++numLits;
 		if(*token== '-'){
 			lit = atoi(token);
-		    clauses[indexC].vars.push_back(-lit);
+		    clauses[indexC].push_back(-lit);
 		    variables[-lit].negC.push_back(indexC);
 			token = strtok(NULL, s);
 			continue;
 		}
 		if(*token == '0'){
-		    clauses[indexC].numLits = numLits;
 		    return;
 		}
 		lit = atoi(token);
-	    clauses[indexC].vars.push_back(lit);
+	    clauses[indexC].push_back(lit);
 	    variables[lit].posC.push_back(indexC);
 		token = strtok(NULL, s);
     }
@@ -206,7 +197,6 @@ void printOptions(){
 	cout<<"c maxTries: "<<maxTries<<endl;
 	cout<<"c maxFlips: "<<maxFlips<<endl;
 	cout<<"c eps: "<<eps<<endl;
-	cout<<"c algorithm: "<<alg<<endl;
 	switch(fct){
 	case 0:{
 		cout<<"c polynomial function"<<endl;
@@ -239,7 +229,7 @@ void printClauses(){
 	cout<< "Clauses "<< ": " << endl ;
    	for(int i = 0; i < numCs; i++){
    		cout<< "Clause "<< i<< ": " ;
-   		printClause(clauses[i]);
+   		printVector(clauses[i]);
    	}
 }
 void printAssignment(){
@@ -287,22 +277,19 @@ void initializeAssignment(){
    	}
 }
 int getFlipCandidate(int cIndex){
-	C& clause = clauses[cIndex];
-    vector<int>& vList = clause.vars;
-	int size = clause.numLits,j=0;
-	assert(size > 0);
-	double f[size];
+	vector<int>&  vList = clauses[cIndex];
+	int j=0;
 	double sum=0,randD;
 	for (std::vector<int>::const_iterator i = vList.begin(); i != vList.end(); ++i){
-		sum+= func(*i);
-		f[j]= sum;
+		sum+= lookUpTable[computeBreakScore(*i)];
+		probs[j]= sum;
 		j++;
 	}
 	randD = ((double)rand()/RAND_MAX)*sum;
 	assert(randD >= 0);
-	for(int i = 0; i < size;i++){
-		if(f[i]> randD){
-			return clause.vars[i];
+	for(int i = 0; i < j;i++){
+		if(probs[i]> randD){
+			return vList[i];
 		}
 	}
 	assert(false);
@@ -353,18 +340,6 @@ void test(){
 	}
 	cout<< "s SATISFIABLE"<< endl;
 }
-int computeMakeScore(int index){
-    int score = 0;
-    vector<int>& occList = variables[index].Assign? variables[index].negC : variables[index].posC;
-	//cout<< "in make "<<endl;
-	for (std::vector<int>::const_iterator i = occList.begin(); i != occList.end(); ++i){
-        if (numP[*i] == 0) {
-            score++;
-        }
-    }
-	//cout<< "out make "<<endl;
-    return score;
-}
 int computeBreakScore(int index){
 	//cout<< "in break "<<endl;
     int score = 0;
@@ -377,14 +352,6 @@ int computeBreakScore(int index){
 	//cout<< "out make "<<endl;
     return score;
 }
-double func_equal(int index){
-	return 1.0;
-}
-double func_exp_make(int index){
-	//cout<< "in func_exp "<<endl;
-	return pow(cm,computeMakeScore(index))*pow(cb,-computeBreakScore(index));
-	//cout<< "out func_exp "<<endl;
-};
 
 double func_exp(int index){
 	return pow(cb,-computeBreakScore(index));
@@ -407,76 +374,6 @@ void search_prob(){
 	flip(flipVindex);
 }
 
-void search_lawa(){
-	int randC = rand()%unsatCs.size();
-	int flipCindex = unsatCs[randC];
-	if(numP[flipCindex] > 0){
-		unsatCs[randC]=unsatCs.back();
-		unsatCs.pop_back();
-		return;
-	}
-	if(clauses[flipCindex].numLits == 1){
-		unsatCs[randC]=unsatCs.back();
-		unsatCs.pop_back();
-		flip(0);
-		return;
-	}
-	int vRange = clauses[flipCindex].numLits;
-    int id1 = rand() % vRange;
-    int id2 = rand() % vRange;
-    while(id1 == id2) {
-        id1 = rand() % vRange;
-        id2 = rand() % vRange;
-    }
-    int lit1 = clauses[flipCindex].vars[id1];
-    int lit2 = clauses[flipCindex].vars[id2];
-    int score1 = computeMakeScore(lit1) - computeBreakScore(lit1);
-    int score2 = computeMakeScore(lit2) - computeBreakScore(lit2);
-    if (score1 == score2) {
-        flip(lit1);
-        flip(lit2);
-    } else {
-        int toFlip = score1 > score2 ? lit1 : lit2;
-        flip(toFlip);
-    }
-}
-
-void search_wa(){
-	int randC = 	rand()% unsatCs.size();
-	int flipCindex = unsatCs[randC];
-	if(numP[flipCindex] > 0){
-		unsatCs[randC]=unsatCs.back();
-		unsatCs.pop_back();
-		return;
-	}
-	int flipVindex = getFlipCandidate_wa(flipCindex);
-	unsatCs[randC]=unsatCs.back();
-	unsatCs.pop_back();
-	flip(flipVindex);
-
-}
-
-// todo: improvement still posssible.Break value calculated twice.
-int getFlipCandidate_wa(int cIndex){
-	C& clause = clauses[cIndex];
-    vector<int>& vList = clause.vars;
-	for (std::vector<int>::const_iterator i = vList.begin(); i != vList.end(); ++i){
-		if(computeBreakScore(*i)==0){
-			return *i;
-		}
-	}
-	if(((double)rand()/RAND_MAX) < w) 	return rand()% clause.numLits;
-	int maxIndex;
-	double max = -1, candidate = -1;
-	for (std::vector<int>::const_iterator i = vList.begin(); i != vList.end(); ++i){
-		candidate = func(*i);
-		if(candidate> max){
-		max = candidate;
-		maxIndex = *i;
-		}
-	}
-	return maxIndex;
-}
 
 void printVector(vector<int>& vec){
 	for (std::vector<int>::const_iterator i = vec.begin(); i != vec.end(); ++i){
@@ -503,7 +400,6 @@ void printUsage(){
 	printf("\n-------------------Options------------------------------------------------------\n");
 	printf("\n");
 	printf("**for the potential flipping function:\n");
-	printf("   --algorithm, -a: 0 =  probSAT; 1 = LAZYWALKER 2 = WALKSAT [default = 0]\n");
 	printf("   --function, -f: 0 =  polynomial; 1 = exponential with make; 2 = exponential only with break: 3 = equal  [default = 0]\n");
 	printf("   --eps, -e <double value> [0.0,1.0] :  [default = 1.0]\n");
 	printf("   --cb, -b <double value>  [2.0,10.0] : constant for break\n");
@@ -523,11 +419,6 @@ void printUsage(){
 	printf("---------------------------------------------------------------------------------\n");
 }
 
-void printClause(C& clause){
-cout<< "numer of variables: " << clause.numLits << endl;
-printVector(clause.vars);
-cout<<endl;
-}
 
 void printVariable(V& variable){
 cout<< variable.Assign << endl;
@@ -538,5 +429,17 @@ printVector(variable.negC);
 cout<<endl;
 }
 
+void initLookUpTable_exp(){
+	lookUpTable = (double*)malloc(sizeof(double) * numCs);
+	for(int i = 0; i < numCs;i++){
+		lookUpTable[i] = pow(cb,-i);
+	}
+}
 
+void initLookUpTable_poly(){
+	lookUpTable = (double*)malloc(sizeof(double) * numCs);
+	for(int i = 0; i < numCs;i++){
+		lookUpTable[i] = pow((eps+i),-cb);
+	}
+}
 

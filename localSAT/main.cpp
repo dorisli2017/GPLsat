@@ -168,7 +168,6 @@ void parseLine(string line,int indexC){
     int lit;
     char* token = strtok(str, s);
     while(token != NULL){
-    	++numLits;
 		if(*token== '-'){
 			lit = atoi(token);
 		    clauses[indexC].push_back(-lit);
@@ -278,10 +277,12 @@ void initializeAssignment(){
 }
 int getFlipCandidate(int cIndex){
 	vector<int>&  vList = clauses[cIndex];
-	int j=0;
+	int j=0,bre;
 	double sum=0,randD;
 	for (std::vector<int>::const_iterator i = vList.begin(); i != vList.end(); ++i){
-		sum+= lookUpTable[computeBreakScore(*i)];
+		bre = computeBreakScore(*i);
+		if(bre == 0) return *i;
+		sum+= lookUpTable[bre];
 		probs[j]= sum;
 		j++;
 	}

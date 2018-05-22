@@ -36,6 +36,7 @@ struct V *variables;
 int* numP;
 vector<int> unsatCs;
 double* probs;
+int maxOcc;
 
  struct V{
 	vector<int> posC;

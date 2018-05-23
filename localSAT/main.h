@@ -39,8 +39,8 @@ double* probs;
 bool* assign;
 vector<int>* posC;
 vector<int>* negC;
-/*int* posOc;
-int* negOc;*/
+int* posOc;
+int* negOc;
 int maxOcc;
 double* lookUpTable;
 
@@ -68,7 +68,9 @@ void readFile(const char* fileName);
 void memAllocate(string buff);
 void parseLine(string line, int index);
 void testLine(string line);
-void initializeAssignment();
+void initialAssignment();
+void randomAssignment();
+void setAssignment();
 void printVariables();
 void printClauses();
 void printAssignment();

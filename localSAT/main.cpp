@@ -12,8 +12,8 @@ int main(int argc, char *argv[]){
 	readFile(fileName);
 	initLookUpTable();
 	int size;
+	//debugProblem();
 	for(unsigned int i = 0; i <maxTries;i++){
-		initializeAssignment();
 		for(unsigned int j = 0; j < maxFlips; j++){
 			size =  unsatCs.size();
 			if (size == 0){
@@ -25,6 +25,7 @@ int main(int argc, char *argv[]){
 			}
 			search_prob();
 		}
+		randomAssignment();
 	}
 	//test();
 	debugAssign();
@@ -34,6 +35,10 @@ void debugProblem(){
 	printOptions();
 	printVariables();
 	printClauses();
+	cout<< "Occurences:"<< endl;
+	for(int i = 1; i < numVs; i++){
+		cout<< i<< ":"<<posOc[i]<< " "<<negOc[i]<< endl;
+	}
 }
 void debugAssign(){
 	/* Testing code**********************************/
@@ -144,6 +149,7 @@ void readFile(const char* fileName){
 		parseLine(buff, index);
 		line++;
    	}
+   	initialAssignment();
 };
 void memAllocate(string buff){
 	parseLine(buff,-1);
@@ -153,8 +159,8 @@ void memAllocate(string buff){
 	numP = (int*) malloc(sizeof(int) * numCs);
 	probs = (double*)malloc(sizeof(double) * numVs);
 	assign = (bool*)malloc(sizeof(bool) * numVs);
-	/*posOc = (int*) malloc(sizeof(int) * numVs);
-	negOc = (int*) malloc(sizeof(int) * numVs);*/
+	posOc = (int*) malloc(sizeof(int) * numVs);
+	negOc = (int*) malloc(sizeof(int) * numVs);
 }
 void parseLine(string line,int indexC){
 	char* str = strdup(line.c_str());
@@ -166,14 +172,13 @@ void parseLine(string line,int indexC){
 		numCs = atoi(strtok(NULL, s));
 		return;
     }// for the p line
-    int numLits = -1;
     int lit;
     char* token = strtok(str, s);
     while(token != NULL){
 		if(*token== '-'){
 			lit = atoi(token);
 		    clauses[indexC].push_back(lit);
-		    negC[-lit].push_back(indexC);
+		    negOc[-lit]++;
 			token = strtok(NULL, s);
 
 			continue;
@@ -183,7 +188,7 @@ void parseLine(string line,int indexC){
 		}
 		lit = atoi(token);
 	    clauses[indexC].push_back(lit);
-	    posC[lit].push_back(indexC);
+	    posOc[lit]++;
 		token = strtok(NULL, s);
     }
 	perror("a clause line does not terminates");
@@ -222,7 +227,8 @@ void printOptions(){
 }
 void printVariables(){
 	cout<< "Variables "<< ": " <<endl ;
-   	for(int i = 0; i < numVs; i++){
+   	for(int i = 1; i < numVs; i++){
+   		cout<< "Variable "<<i << ": " <<endl ;
    		printVector(posC[i]);
    		printVector(negC[i]);
    	}
@@ -254,12 +260,44 @@ void printNumP(){
 	}
 	cout<<endl;
 }
-void initializeAssignment(){
+
+
+
+
+void initialAssignment(){
+	for(int i = 0; i < numVs; i++){
+			if(posOc[i] > negOc[i]){
+				assign[i] = true;
+				if(posOc[i]> maxOcc) maxOcc = posOc[i];
+			}
+			else{
+				assign[i] = false;
+				if(negOc[i]> maxOcc) maxOcc = negOc[i];
+			}
+			posC[i].reserve(posOc[i]);
+			negC[i].reserve(negOc[i]);
+		}
+	for(int j = 0; j < numCs; j++){
+		for (std::vector<int>::const_iterator i = clauses[j].begin(); i != clauses[j].end(); ++i){
+			if(*i < 0) negC[-(*i)].push_back(j);
+			else  posC[(*i)].push_back(j);
+		}
+	}
+	setAssignment();
+}
+
+void randomAssignment(){
    	for(int i = 0; i < numCs; i++){
    		numP[i] = 0;
    	}
    	for(int j = 0; j < numVs; j++){
    		assign[j] = (rand()%2 ==1);
+   	}
+    setAssignment();
+}
+
+void setAssignment(){
+   	for(int j = 0; j < numVs; j++){
 		if(assign[j] == false){
 	   		for (std::vector<int>::const_iterator i = negC[j].begin(); i != negC[j].end(); ++i){
 	   			numP[*i]++;
@@ -273,7 +311,6 @@ void initializeAssignment(){
    	}
    	for(int i = 0; i < numCs; i++){
    		if(numP[i] == 0){
-   			//cout<< "******************"<< i << "***************";
    			unsatCs.push_back(i);
    		}
    	}
@@ -346,7 +383,7 @@ void test(){
 		if(buff.empty()) break;
 		testLine(buff);
    	}
-   	printAssignment();
+   	cout<< "tested" << endl;
 }
 
 void testLine(string line){
@@ -458,15 +495,15 @@ void printUsage(){
 
 
 void initLookUpTable_exp(){
-	lookUpTable = (double*)malloc(sizeof(double) * numCs);
-	for(int i = 0; i < numCs;i++){
+	lookUpTable = (double*)malloc(sizeof(double) * maxOcc);
+	for(int i = 0; i < maxOcc;i++){
 		lookUpTable[i] = pow(cb,-i);
 	}
 }
 
 void initLookUpTable_poly(){
-	lookUpTable = (double*)malloc(sizeof(double) * numCs);
-	for(int i = 0; i < numCs;i++){
+	lookUpTable = (double*)malloc(sizeof(double) * maxOcc);
+	for(int i = 0; i < maxOcc;i++){
 		lookUpTable[i] = pow((eps+i),-cb);
 	}
 }

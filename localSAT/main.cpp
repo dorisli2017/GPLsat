@@ -18,7 +18,7 @@ int main(int argc, char *argv[]){
 			size =  unsatCs.size();
 			if (size == 0){
 				//debugAssign();
-				//test();
+				test();
 				cout<< "s SATISFIABLE"<< endl;
 				//printAssignment();
 				return 0;
@@ -144,7 +144,6 @@ void readFile(const char* fileName){
 		parseLine(buff, index);
 		line++;
    	}
-	//cout<< "out readFile"<<endl;
 };
 void memAllocate(string buff){
 	parseLine(buff,-1);
@@ -154,6 +153,8 @@ void memAllocate(string buff){
 	numP = (int*) malloc(sizeof(int) * numCs);
 	probs = (double*)malloc(sizeof(double) * numVs);
 	assign = (bool*)malloc(sizeof(bool) * numVs);
+	/*posOc = (int*) malloc(sizeof(int) * numVs);
+	negOc = (int*) malloc(sizeof(int) * numVs);*/
 }
 void parseLine(string line,int indexC){
 	char* str = strdup(line.c_str());
@@ -171,7 +172,7 @@ void parseLine(string line,int indexC){
     while(token != NULL){
 		if(*token== '-'){
 			lit = atoi(token);
-		    clauses[indexC].push_back(-lit);
+		    clauses[indexC].push_back(lit);
 		    negC[-lit].push_back(indexC);
 			token = strtok(NULL, s);
 
@@ -300,7 +301,7 @@ int getFlipCandidate(int cIndex){
 }
 void flip(int j){
 	std::vector<int>::const_iterator i;
-	if(assign[j] == false){
+	if(j > 0){
    		for (i = negC[j].begin(); i != negC[j].end(); ++i){
    			numP[*i]--;
    			if(numP[*i] == 0) unsatCs.push_back(*i);
@@ -312,41 +313,74 @@ void flip(int j){
 		assign[j] = true;
 	}
 	else{
-   		for (i = negC[j].begin(); i != negC[j].end(); ++i){
+   		for (i = negC[-j].begin(); i != negC[-j].end(); ++i){
    			numP[*i]++;
    		}
-		for (i = posC[j].begin(); i != posC[j].end(); ++i){
+		for (i = posC[-j].begin(); i != posC[-j].end(); ++i){
    			numP[*i]--;
    			if(numP[*i] == 0) unsatCs.push_back(*i);
 		}
-		assign[j]= false;
+		assign[-j]= false;
 	}
 }
 void test(){
-	int test[numCs];
-	memset(test, 0, sizeof(test));
-	std::vector<int>::const_iterator i;
-	for(int j = 0; j < numVs; j++){
-		if(assign[j] == true){
-			for (i = posC[j].begin(); i != posC[j].end(); ++i){
-	   			test[*i]++;
-			}
-		}
-		else{
-			for (i = negC[j].begin(); i != negC[j].end(); ++i){
-				test[*i]++;
-			}
-		}
+	ifstream fp;
+	fp.open(fileName,std::ios::in);
+	if(!fp.is_open()){
+		perror("read file fails");
+		exit(EXIT_FAILURE);
 	}
-	for(int j = 0; j < numCs; j++){
-	assert(test[j]>0);
+	string buff;
+	char head;
+   	getline(fp,buff);
+   	while(!fp.eof()){
+   		if(buff.empty()) break;
+		head =buff.at(0);
+		if(head == 'p'){
+			break;
+		}
+	  getline(fp,buff);
 	}
-	cout<< "s SATISFIABLE"<< endl;
+   	while(!fp.eof()){
+		getline(fp,buff);
+		if(buff.empty()) break;
+		testLine(buff);
+   	}
+   	printAssignment();
+}
+
+void testLine(string line){
+	char* str = strdup(line.c_str());
+    const char s[2] = " ";
+    int lit;
+    int numT=0;
+    char* token = strtok(str, s);
+    while(token != NULL){
+		if(*token== '-'){
+			lit = atoi(token);
+			if(assign[-lit] == false) numT++;
+			token = strtok(NULL, s);
+			continue;
+		}
+		if(*token == '0'){
+			if(numT == 0){
+				perror("TEST FAILURE");
+				exit(EXIT_FAILURE);
+			}
+		    return;
+		}
+		lit = atoi(token);
+		if(assign[lit] == true) numT++;
+		token = strtok(NULL, s);
+    }
+	perror("a clause line does not terminates");
+	exit(EXIT_FAILURE);
+
 }
 int computeBreakScore(int index){
-	//cout<< "in break "<<endl;
     int score = 0;
-    vector<int>& occList =assign[index]? posC[index] :negC[index];
+    int aIndex = abs(index);
+    vector<int>& occList =(index < 0)? posC[aIndex] :negC[aIndex];
     for(std::vector<int>::const_iterator i = occList.begin(); i != occList.end(); ++i) {
         if (numP[*i]== 1) {
             score++;

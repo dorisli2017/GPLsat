@@ -43,6 +43,7 @@ int* posOc;
 int* negOc;
 int maxOcc;
 double* lookUpTable;
+vector<int> clauseT;
 
 
 /*settings*/

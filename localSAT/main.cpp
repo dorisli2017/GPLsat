@@ -161,6 +161,7 @@ void memAllocate(string buff){
 	assign = (bool*)malloc(sizeof(bool) * numVs);
 	posOc = (int*) malloc(sizeof(int) * numVs);
 	negOc = (int*) malloc(sizeof(int) * numVs);
+	clauseT.reserve(numVs);
 }
 void parseLine(string line,int indexC){
 	char* str = strdup(line.c_str());
@@ -173,22 +174,26 @@ void parseLine(string line,int indexC){
 		return;
     }// for the p line
     int lit;
+    int size;
     char* token = strtok(str, s);
     while(token != NULL){
 		if(*token== '-'){
 			lit = atoi(token);
-		    clauses[indexC].push_back(lit);
+			clauseT.push_back(lit);
 		    negOc[-lit]++;
 			token = strtok(NULL, s);
-
+			size++;
 			continue;
 		}
 		if(*token == '0'){
+			clauses[indexC] = clauseT;
+			clauseT.clear();
 		    return;
 		}
 		lit = atoi(token);
-	    clauses[indexC].push_back(lit);
+		clauseT.push_back(lit);
 	    posOc[lit]++;
+	    size++;
 		token = strtok(NULL, s);
     }
 	perror("a clause line does not terminates");

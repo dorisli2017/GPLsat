@@ -58,7 +58,8 @@ void parseOptions(int argc, char *argv[]){
 	//The argument longopts must be an array of long option structures.
 	struct option longopts[] ={{"output",no_argument,0,'o' },
 							   {"help",no_argument,0,'h' },
-							   {"tabu",no_argument,0,'t' },
+							   //user defined
+							   {"ct", required_argument,0, 't'},
 							   {"cb", required_argument,0, 'b'},
 							   {"seed", required_argument,0, 's'},
 							   {"cm", required_argument,0, 'm'},
@@ -67,12 +68,13 @@ void parseOptions(int argc, char *argv[]){
 							   {"Flips", required_argument,0, 'p'},
 							   { "eps", required_argument, 0, 'e' },
 							   {"function", required_argument,0, 'f'},
+							   {"Initialization", required_argument,0, 'i'},
 	                           //the opt array must terminate with a all zero element.
 							   {0,0,0,0}
 	                          };
 	int result;
 	int option_index = 0;
-	while ((result = getopt_long(argc, argv, "ohts:m:w:r:p:e:f:b:",longopts,&option_index)) != -1){
+	while ((result = getopt_long(argc, argv, "oht:s:m:w:r:p:e:f:b:i:",longopts,&option_index)) != -1){
 		switch (result) {
 		case 'o': output_flag = true; break;
 		case 'h':
@@ -84,7 +86,7 @@ void parseOptions(int argc, char *argv[]){
 			seed = atoi(optarg);
 			break;
 		}
-		case 't': tabu_flag = true; break;
+		case 't': ct = atof(optarg); break;
 		case 'b': cb = atof(optarg); break;
 		case 'm': cm = atof(optarg); break;
 		case 'w': w = atof(optarg); break;
@@ -92,6 +94,7 @@ void parseOptions(int argc, char *argv[]){
 		case 'p': maxFlips = strtoull(optarg,NULL,0); break;
 		case 'e': eps = atof(optarg); break;
 		case 'f': fct = atoi(optarg); break;
+		case 'i': ict = atoi(optarg); break;
 		default:
 			printUsage();
 			exit(0);
@@ -157,11 +160,26 @@ void memAllocate(string buff){
 	posC= new vector<int>[numVs];
 	negC= new vector<int>[numVs];
 	numP = (int*) malloc(sizeof(int) * numCs);
+	for(int i = 0; i < numCs; i++){
+		numP[i] = 0;
+	}
 	probs = (double*)malloc(sizeof(double) * numVs);
 	assign = (bool*)malloc(sizeof(bool) * numVs);
 	posOc = (int*) malloc(sizeof(int) * numVs);
+	for(int i = 0; i < numVs; i++){
+		posOc[i] = 0;
+	}
 	negOc = (int*) malloc(sizeof(int) * numVs);
+	for(int i = 0; i < numVs; i++){
+		negOc[i] = 0;
+	}
 	clauseT.reserve(numVs);
+	if(ct){
+		tabuS = (int*)malloc(sizeof(int) * numVs);
+		for(int i = 0; i < numVs; i++){
+			tabuS[i] = 0;
+		}
+	}
 }
 void parseLine(string line,int indexC){
 	char* str = strdup(line.c_str());
@@ -202,7 +220,7 @@ void parseLine(string line,int indexC){
 void printOptions(){
 	printf("localSAT options: \n");
 	cout<<"c output_flag: "<<output_flag<<endl;
-	cout<<"c tabu_flag: "<<tabu_flag<<endl;
+	cout<<"c ct: "<<ct<<endl;
 	cout<<"c cb: "<<cb<<endl;
 	cout<<"c cm: "<<cm<<endl;
 	cout<<"c w: "<<w<<endl;
@@ -271,14 +289,15 @@ void printNumP(){
 
 void initialAssignment(){
 	for(int i = 0; i < numVs; i++){
-			if(posOc[i] > negOc[i]){
-				assign[i] = true;
-				if(posOc[i]> maxOcc) maxOcc = posOc[i];
-			}
-			else{
-				assign[i] = false;
-				if(negOc[i]> maxOcc) maxOcc = negOc[i];
-			}
+		//initial the assignment based on the occurences of literals.
+		    int sum = posOc[i] +negOc[i];
+		    if (sum == 0){
+		    	assign[i] = (rand()%2 ==1);
+		    	continue;
+		    }
+			assign[i] = (rand()%(posOc[i] +negOc[i]))< posOc[i];
+			if(posOc[i]> maxOcc) maxOcc = posOc[i];
+			if(negOc[i]> maxOcc) maxOcc = negOc[i];
 			posC[i].reserve(posOc[i]);
 			negC[i].reserve(negOc[i]);
 		}
@@ -292,12 +311,30 @@ void initialAssignment(){
 }
 
 void randomAssignment(){
-   	for(int i = 0; i < numCs; i++){
-   		numP[i] = 0;
-   	}
-   	for(int j = 0; j < numVs; j++){
-   		assign[j] = (rand()%2 ==1);
-   	}
+	for(int i = 0; i < numCs; i++){
+		numP[i] = 0;
+	}
+	if(ct){
+	for(int i = 0; i < numVs; i++){
+		tabuS[i] = 0;
+	}
+	}
+	if(ict == 0){
+		for(int i = 0; i < numVs; i++){
+			//initial the assignment based on the occurences of literals.
+			    int sum = posOc[i] +negOc[i];
+			    if (sum == 0){
+			    	assign[i] = (rand()%2 ==1);
+			    	continue;
+			    }
+				assign[i] = (rand()%(posOc[i] +negOc[i]))< posOc[i];
+		}
+	}
+	else{
+		for(int j = 0; j < numVs; j++){
+			assign[j] = (rand()%2 ==1);
+		}
+	}
     setAssignment();
 }
 
@@ -326,7 +363,10 @@ int getFlipCandidate(int cIndex){
 	double sum=0,randD;
 	for (std::vector<int>::const_iterator i = vList.begin(); i != vList.end(); ++i){
 		bre = computeBreakScore(*i);
-		//if(bre == 0) return *i;
+		if(ct){
+			if(bre == 0 && rand()%maxFlips > tabuS[*i]) return *i;
+			bre += ct*tabuS[*i];
+		}
 		sum+= lookUpTable[bre];
 		probs[j]= sum;
 		j++;
@@ -353,6 +393,7 @@ void flip(int j){
 		}
 
 		assign[j] = true;
+		if(ct) tabuS[j]++;
 	}
 	else{
    		for (i = negC[-j].begin(); i != negC[-j].end(); ++i){
@@ -363,6 +404,7 @@ void flip(int j){
    			if(numP[*i] == 0) unsatCs.push_back(*i);
 		}
 		assign[-j]= false;
+		if(ct) tabuS[-j]++;
 	}
 }
 void test(){
@@ -428,7 +470,6 @@ int computeBreakScore(int index){
             score++;
         }
     }
-	//cout<< "out make "<<endl;
     return score;
 }
 

@@ -45,10 +45,12 @@ int maxOcc;
 double* lookUpTable;
 vector<int> clauseT;
 
+//tabu
+int* tabuS;
+
 
 /*settings*/
 bool output_flag;
-bool tabu_flag;
 bool seed_flag;
 /*option values*/
 
@@ -57,9 +59,11 @@ unsigned long long int maxFlips = ULLONG_MAX;
 int seed;
 double cb=3.6;
 double cm=0.5;
+double ct = 0.3;
 double w = 0.3;// The probability used in the WALKSAT algorithm
 float eps= 1.0;
 int fct= 2;
+int ict = 0;
 
 
 /*methods*/

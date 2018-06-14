@@ -27,35 +27,41 @@
 #include <stdlib.h>
 using namespace std;
 
-/*problem and assignment*/
+/*problem */
 char* fileName;
 int numCs;
 int numVs;
-vector<int>* clauses;
-struct V *variables;
-int* numP;
-vector<int> unsatCs;
-double* probs;
-bool* assign;
 vector<int>* posC;
 vector<int>* negC;
 int* posOc;
 int* negOc;
 int maxOcc;
 double* lookUpTable;
+vector<int>* clauses;
 vector<int> clauseT;
-
 //tabu
 int* tabuS;
 
-
 /*settings*/
 bool output_flag;
+unsigned long long int maxTries = ULLONG_MAX;
+unsigned long long int maxFlips = ULLONG_MAX;
+
+
+//----------------------local-----------------
+
+
+/*assignment*/
+int* numP;
+vector<int> unsatCs;
+double* probs;
+bool* assign;
+
+
+
 bool seed_flag;
 /*option values*/
 
-unsigned long long int maxTries = ULLONG_MAX;
-unsigned long long int maxFlips = ULLONG_MAX;
 int seed;
 double cb=3.6;
 double cm=0.5;

@@ -45,7 +45,7 @@ all: parallelSAT
 parallelSAT: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: Cross G++ Linker'
-	g++ -fopenmp -o "parallelSAT" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++ -fopenmp -std=c++11 -o "parallelSAT" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 

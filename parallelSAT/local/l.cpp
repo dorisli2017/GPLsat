@@ -279,6 +279,7 @@ void Process::optimal(){
 				if (unsatN == 0 ){
 				#pragma omp critical
 					{
+					printAssignment();
 					test();
 					}
 					satG = true;

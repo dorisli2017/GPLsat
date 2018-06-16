@@ -227,8 +227,8 @@ template <class T> void printVector(vector<T>& vec){
 }
 
 Process::Process(){
-	vector<double>&  pd = paraD[omp_get_thread_num()];
-	vector<int>&  pi = paraI[omp_get_thread_num()];
+	vector<double>&  pd = paraD[0];
+	vector<int>&  pi = paraI[1];
 	cb = pd[0];
     ct = pd[1];
     eps = pd[2];

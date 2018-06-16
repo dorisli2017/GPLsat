@@ -5,8 +5,8 @@
  *      Author: ping
  */
 
-#ifndef PL_H_
-#define PL_H_
+#ifndef L_H_
+#define L_H_
 #include <vector>
 #include <climits>
 #include <getopt.h>
@@ -122,4 +122,4 @@ class Process{
 
 
 
-#endif /* PL_H_ */
+#endif /* L_H_ */
